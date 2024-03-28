@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 const app = express()
 
@@ -10,7 +12,7 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :r
 app.use(express.json())
 app.use(express.static('dist'))
 
-let persons = [
+/* let persons = [
     { 
       "id": 1,
       "name": "Arto Hellas", 
@@ -31,57 +33,60 @@ let persons = [
       "name": "Mary Poppendieck", 
       "number": "39-23-6423122"
     }
-]
+] */
 
 app.get('/', (request, response) => {
   response.send('<h1>Hello World!</h1>')
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then(notes => {
+    response.json(notes)
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = persons.find(person => person.id === id)
-  
-  if (person) {
+  Person.findById(request.params.id).then(person => {
     response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  })
 })
 
-app.get('/info', (request, response) => {
+/* app.get('/info', (request, response) => {
   const timeSent = Date()
   response.send(`<p>There are currently ${persons.length} entries in the phonebook.</p>
                  <p>${timeSent}</p>`)
-})
+}) */
 
-app.delete('/api/persons/:id', (request, response) => {
+/* app.delete('/api/persons/:id', (request, response) => {
   const id = Number(request.params.id)
   persons = persons.filter(person => person.id != id)
 
   response.status(204).end()
-})
+}) */
 
 app.post('/api/persons', (request, response) => {
-  const newPerson = request.body
+  const body = request.body
   
-  if (!newPerson.name) {
+  if (!body.name) {
     response.status(400).json({error: 'Name field not provided'})
-  } else if (!newPerson.number) {
+  } else if (!body.number) {
     response.status(400).json({error: 'Number field not provided'})
-  } else if (persons.find(person => person.name === newPerson.name)) {
+  } /* else if (persons.find(person => person.name === body.name)) {
     response.status(400).json({error: 'Name already exists'})
-  } else {
-    persons = persons.concat(newPerson)
-    response.json(newPerson)
+  } */ else {
+    const person = new Person({
+      name: body.name,
+      number: body.number
+    })
+
+    person.save().then(savedPerson => {
+      response.json(savedPerson)
+    })
   }
   
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
